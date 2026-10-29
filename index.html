@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Интерактивный тест: Инфекции и Вакцинация</title>
+    <style>
+        /* БАЗОВЫЕ НАСТРОЙКИ И АНТИЧИТ */
+        :root {
+            --bg-color: #050505;
+            --surface-color: #0f172a;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent-main: #06b6d4; /* CRISPR Blue */
+            --accent-hover: #22d3ee;
+            --accent-purple: #a855f7;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --border-color: rgba(6, 182, 212, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none !important; /* ЗАПРЕТ ВЫДЕЛЕНИЯ */
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            -webkit-touch-callout: none !important; /* ЗАПРЕТ МЕНЮ iOS */
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            background-image: radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.1) 0%, transparent 70%);
+        }
+
+        /* КОНТЕЙНЕРЫ */
+        .app-container {
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* HEADER & PROGRESS */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .test-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-main);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .progress-indicator {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-main));
+            width: 0%;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* STEP 1: ВОПРОС */
+        .question-block {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(6, 182, 212, 0.05);
+            transition: opacity 0.3s ease;
+        }
+
+        .question-text {
+            font-size: 1.25rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .meta-tag {
+            display: inline-block;
+            background: rgba(168, 85, 247, 0.15);
+            color: var(--accent-purple);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        /* STEP 2: ОТВЕТЫ */
+        .answers-block {
+            display: none; /* Скрыто по умолчанию - Аккордеон */
+            flex-direction: column;
+            gap: 15px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .answer-btn {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .answer-btn:hover {
+            border-color: var(--accent-main);
+            background: rgba(6, 182, 212, 0.1);
+            transform: translateX(5px);
+            box-shadow: -5px 0 15px rgba(6, 182, 212, 0.2);
+        }
+
+        .answer-btn:active {
+            transform: translateX(0);
+        }
+
+        .answer-letter {
+            font-weight: bold;
+            color: var(--accent-main);
+            margin-right: 15px;
+            font-size: 1.2rem;
+            min-width: 25px;
+        }
+
+        /* КНОПКИ УПРАВЛЕНИЯ */
+        .action-btn {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-main));
+            color: white;
+            border: none;
+            padding: 18px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .action-btn:hover {
+            box-shadow: 0 6px 25px rgba(6, 182, 212, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            box-shadow: none;
+            margin-top: 20px;
+            color: var(--accent-main);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(6, 182, 212, 0.1);
+            box-shadow: inset 0 0 10px rgba(6, 182, 212, 0.2);
+        }
+
+        /* ЭКРАНЫ СТАРТА И ФИНАЛА */
+        .intro-screen, .result-screen {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 40px rgba(6, 182, 212, 0.1);
+        }
+
+        .intro-title, .result-title {
+            font-size: 2.2rem;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, var(--accent-main), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .intro-desc {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .result-score {
+            font-size: 4rem;
+            font-weight: 800;
+            margin: 20px 0;
+        }
+
+        .score-circle {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            border: 4px solid;
+            font-size: 4rem;
+            font-weight: bold;
+            box-shadow: 0 0 30px currentcolor;
+        }
+
+        .grade-5 { border-color: var(--success-color); color: var(--success-color); }
+        .grade-4 { border-color: var(--accent-main); color: var(--accent-main); }
+        .grade-3 { border-color: #f59e0b; color: #f59e0b; }
+        .grade-2 { border-color: var(--danger-color); color: var(--danger-color); }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .stat-val { font-size: 1.8rem; font-weight: bold; color: var(--accent-main); }
+        .stat-label { font-size: 0.9rem; color: var(--text-secondary); text-transform: uppercase; margin-top: 5px; }
+
+        /* BLACKOUT OVERLAY (ANTI-CHEAT) */
+        #blackout-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #000;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--danger-color);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .warning-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px var(--danger-color);
+        }
+
+        .warning-text {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+        
+        .warning-subtext {
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        /* Утилиты */
+        .hidden { display: none !important; }
+        
+        @media (max-width: 600px) {
+            .app-container { padding: 15px; }
+            .question-block { padding: 20px 15px; }
+            .question-text { font-size: 1.1rem; }
+            .answer-btn { padding: 15px; font-size: 1rem; }
+            .intro-title { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BLACKOUT ЭКРАН -->
+    <div id="blackout-overlay">
+        <div class="warning-icon">⚠️</div>
+        <div class="warning-text">СИСТЕМНЫЙ СБОЙ</div>
+        <div class="warning-subtext">Обнаружена попытка фиксации экрана или потери фокуса.<br>Текущий вопрос аннулирован (0 баллов).</div>
+    </div>
+
+    <div class="app-container">
+        
+        <!-- СТАРТОВЫЙ ЭКРАН -->
+        <div id="intro-screen" class="intro-screen">
+            <h1 class="intro-title">БИОХАКИНГ И ИММУНИТЕТ</h1>
+            <p class="intro-desc">Инфекционные заболевания и алгоритмы вакцинации.<br>15 случайных вопросов. Продвинутый уровень (11 класс).<br><br><b>ВНИМАНИЕ:</b> Протокол античита активирован. Любая попытка сделать скриншот, свернуть окно браузера или открыть панель уведомлений приведет к мгновенному сгоранию текущего вопроса.</p>
+            <button class="action-btn" onclick="startTest()">Инициализировать тест ➔</button>
+        </div>
+
+        <!-- ОСНОВНОЙ ИНТЕРФЕЙС ТЕСТА -->
+        <div id="test-interface" class="hidden">
+            <div class="header">
+                <div class="test-title">БИОЛОГИЯ // 11 КЛАСС</div>
+                <div class="progress-indicator"><span id="current-q-num">1</span> / 15</div>
+            </div>
+            
+            <div class="progress-bar-container">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+
+            <!-- ШАГ 1: ВОПРОС -->
+            <div id="step-1">
+                <div class="question-block" id="question-block">
+                    <span id="q-meta" class="meta-tag">БАЗА ДАННЫХ</span>
+                    <div id="q-text" class="question-text">Загрузка данных...</div>
+                </div>
+                <button class="action-btn" onclick="showStep2()">Дешифровать варианты ответов ➔</button>
+            </div>
+
+            <!-- ШАГ 2: ОТВЕТЫ -->
+            <div id="step-2" class="answers-block">
+                <div id="answers-container">
+                    <!-- Кнопки ответов генерируются JS -->
+                </div>
+                <button class="action-btn btn-secondary" onclick="showStep1()">⬅ Вернуться к сканированию вопроса</button>
+            </div>
+        </div>
+
+        <!-- ФИНАЛЬНЫЙ ЭКРАН -->
+        <div id="result-screen" class="result-screen hidden">
+            <h2 class="result-title">СИСТЕМА ОБНОВЛЕНА</h2>
+            
+            <div id="grade-circle" class="score-circle">5</div>
+            
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div id="res-correct" class="stat-val">15</div>
+                    <div class="stat-label">Успешных патчей</div>
+                </div>
+                <div class="stat-box">
+                    <div id="res-percent" class="stat-val">100%</div>
+                    <div class="stat-label">Интеграция</div>
+                </div>
+            </div>
+
+            <p id="res-analysis" class="intro-desc" style="margin-bottom: 0; font-weight: bold;"></p>
+        </div>
+
+    </div>
+
+    <script>
+        /* ==========================================
+           БАНК ВОПРОСОВ (60 шт.)
+           ========================================== */
+        const allQuestions = [
+            // БЛОК 1: Хук (Самая смертоносная война - Оспа)
+            { tag: 'ИСТОРИЯ БОЛЕЗНЕЙ', q: 'Какое инфекционное заболевание унесло около 300 миллионов жизней только в XX веке?', ans: ['Тяжелая бубонная чума.', 'Смертоносная натуральная оспа.', 'Испанский вирус гриппа.', 'Пандемия холеры в Европе.'], correct: 1 },
+            { tag: 'БИОХАКИНГ', q: 'Благодаря какому единственному инструменту человечеству удалось полностью уничтожить натуральную оспу?', ans: ['Изобретение мощных антибиотиков.', 'Очистка питьевой воды хлором.', 'Массовая глобальная вакцинация.', 'Строгий карантин в городах.'], correct: 2 },
+            { tag: 'ФАКТЫ', q: 'Каков текущий статус натуральной оспы на нашей планете в XXI веке?', ans: ['Она регулярно мутирует каждую осень.', 'Она полностью уничтожена в природе.', 'Она прячется в организмах животных.', 'Она неизлечима и продолжает убивать.'], correct: 1 },
+            { tag: 'ИСТОРИЯ БОЛЕЗНЕЙ', q: 'Кого в истории медицины считают создателем первой успешной вакцины от оспы?', ans: ['Английского врача Эдварда Дженнера.', 'Французского химика Луи Пастера.', 'Британского биолога Александра Флеминга.', 'Русского ученого Илью Мечникова.'], correct: 0 },
+            { tag: 'ЛОГИКА ИНФЕКЦИИ', q: 'Почему именно оспу удалось полностью стереть с лица земли, в отличие от гриппа?', ans: ['Вирус оспы практически не мутировал.', 'Она передавалась только через кровь.', 'Антитела к ней вырабатывались за день.', 'Она поражала исключительно животных.'], correct: 0 },
+            { tag: 'СТАТИСТИКА', q: 'Как количество жертв натуральной оспы в XX веке соотносится с потерями в войнах?', ans: ['Оно значительно уступает потерям в войнах.', 'Примерно равно потерям Первой мировой.', 'Оно превышает потери во всех войнах века.', 'Оно сопоставимо с жертвами ДТП.'], correct: 2 },
+            { tag: 'СИСТЕМНЫЙ АНАЛИЗ', q: 'Что означает термин «эрадикация» в контексте натуральной оспы?', ans: ['Временное снижение уровня заболеваемости.', 'Полное глобальное искоренение инфекции.', 'Изоляция больных в закрытых палатах.', 'Симптоматическое лечение сыпи на коже.'], correct: 1 },
+            { tag: 'ИСТОРИЯ ВАКЦИН', q: 'Материал от какой болезни использовал Дженнер для создания первой вакцины?', ans: ['От тяжелой бубонной чумы.', 'От легкой коровьей оспы.', 'От сезонного птичьего гриппа.', 'От бактериальной сибирской язвы.'], correct: 1 },
+            { tag: 'БИОХАКИНГ', q: 'Чем по своей сути являлась первая вакцинация против натуральной оспы?', ans: ['Введением готовых химических антител.', 'Умышленным заражением безопасным вирусом.', 'Переливанием крови от здорового человека.', 'Введением мощного синтетического яда.'], correct: 1 },
+            { tag: 'ИНТЕРФЕЙС ИММУНИТЕТА', q: 'Как иммунная система человека реагировала на прививку от коровьей оспы?', ans: ['Она полностью игнорировала чужеродный вирус.', 'Она запоминала структуру вируса для защиты.', 'Она разрушала собственные нервные клетки.', 'Она отключала выработку защитных антител.'], correct: 1 },
+
+            // БЛОК 2: Анатомия захвата (Патогены и Рецепторы)
+            { tag: 'АНАТОМИЯ ЗАХВАТА', q: 'Какую главную цель преследует вирус, когда попадает внутрь нашего организма?', ans: ['Просто питаться нашими ресурсами.', 'Разрушить костную ткань скелета.', 'Взломать клетку для своего размножения.', 'Остановить кровоток в крупных венах.'], correct: 2 },
+            { tag: 'МЕХАНИКА ВИРУСА', q: 'По какому принципу вирус прикрепляется к мембране нашей живой клетки?', ans: ['По принципу случайного жесткого удара.', 'По принципу идеального «ключа и замка».', 'По принципу сильного магнитного поля.', 'По принципу химического растворения.'], correct: 1 },
+            { tag: 'БИОХАКИНГ', q: 'Что представляет собой рецептор на поверхности человеческой клетки для вируса?', ans: ['Непробиваемый щит из плотного белка.', 'Уязвимый порт для загрузки вредного кода.', 'Резервуар с питательными веществами.', 'Канал для вывода клеточных отходов.'], correct: 1 },
+            { tag: 'СТРУКТУРА', q: 'Что вирус впрыскивает внутрь нашей клетки после успешного взлома рецептора?', ans: ['Чистую воду для растворения ядра.', 'Свой генетический код (РНК или ДНК).', 'Мощный запас клеточной энергии АТФ.', 'Токсичные тяжелые промышленные металлы.'], correct: 1 },
+            { tag: 'АНАТОМИЯ ЗАХВАТА', q: 'Как можно описать поведение живой клетки после того, как вирус ее взломал?', ans: ['Она становится фабрикой по сборке вирусов.', 'Она мгновенно превращается в бактерию.', 'Она начинает активно делиться и расти.', 'Она переходит в режим долгого сна.'], correct: 0 },
+            { tag: 'КЛАССИФИКАЦИЯ', q: 'В чем принципиальное отличие вируса от обычной патогенной бактерии?', ans: ['Бактерия меньше вируса в тысячу раз.', 'Вирус не способен размножаться вне клетки.', 'Бактерии состоят только из нитей ДНК.', 'Вирусы можно легко убить антибиотиками.'], correct: 1 },
+            { tag: 'ТЕРМИНОЛОГИЯ', q: 'Как биологи называют чужеродный белок на поверхности вируса, который распознает иммунитет?', ans: ['Внутриклеточный гормон.', 'Опасный антиген.', 'Полезный фермент.', 'Строительный липид.'], correct: 1 },
+            { tag: 'МЕХАНИКА ВИРУСА', q: 'Почему вирус гриппа поражает дыхательные пути, а вирус гепатита — печень?', ans: ['Они имеют ключи к разным типам рецепторов.', 'Это зависит от температуры разных органов.', 'Они выбирают органы случайным образом.', 'Один вирус крупнее и тяжелее другого.'], correct: 0 },
+            { tag: 'АНАТОМИЯ ЗАХВАТА', q: 'Что происходит с нашей зараженной клеткой после того, как она собрала новые вирусы?', ans: ['Она продолжает нормально работать годами.', 'Она разрывается, выпуская армию клонов.', 'Она навсегда запечатывает вирусы внутри.', 'Она превращается в защитный макрофаг.'], correct: 1 },
+            { tag: 'ИТ-МЕТАФОРА', q: 'Если сравнить вирус с компьютерным зловредом, чем является его ДНК/РНК?', ans: ['Прочным бронированным корпусом флешки.', 'Вредоносным исполняемым кодом (malware).', 'Антивирусным сканером системы.', 'Внешним блоком питания компьютера.'], correct: 1 },
+
+            // БЛОК 3: Элитный спецназ внутри нас (Иммунный ответ)
+            { tag: 'ИММУННЫЙ СПЕЦНАЗ', q: 'Как называются крупные иммунные клетки, которые буквально пожирают чужеродные патогены?', ans: ['Эритроциты.', 'Макрофаги.', 'Тромбоциты.', 'Нейроны.'], correct: 1 },
+            { tag: 'БИОХАКИНГ', q: 'Какова главная боевая задача Т-киллеров в нашей иммунной системе?', ans: ['Вырабатывать антитела в плазму крови.', 'Транспортировать кислород к тканям.', 'Уничтожать уже зараженные свои клетки.', 'Пожирать свободные бактерии в крови.'], correct: 2 },
+            { tag: 'ИММУННЫЙ СПЕЦНАЗ', q: 'Какие клетки играют роль «снайперов», вырабатывая миллионы точных антител?', ans: ['Агрессивные Т-киллеры.', 'Быстрые В-лимфоциты.', 'Огромные макрофаги.', 'Клетки-эритроциты.'], correct: 1 },
+            { tag: 'АНАТОМИЯ ЗАЩИТЫ', q: 'Что делают антитела, когда встречают вирус в кровотоке человека?', ans: ['Они блокируют его ключи-рецепторы.', 'Они разрезают вирус на мелкие части.', 'Они поглощают вирус внутрь себя.', 'Они вырабатывают для него энергию.'], correct: 0 },
+            { tag: 'ИНТЕРФЕЙС ИММУНИТЕТА', q: 'Что такое клетки памяти в контексте работы иммунной системы?', ans: ['Клетки мозга, хранящие воспоминания о боли.', 'Лимфоциты, сохраняющие чертежи антител.', 'Мертвые клетки, плавающие в кровотоке.', 'Вирусы, оставшиеся в организме навсегда.'], correct: 1 },
+            { tag: 'ТЕРМИНОЛОГИЯ', q: 'Как называется процесс, при котором макрофаг захватывает и переваривает бактерию?', ans: ['Быстрый пиноцитоз.', 'Внутриклеточный митоз.', 'Активный фагоцитоз.', 'Естественный апоптоз.'], correct: 2 },
+            { tag: 'ИММУННЫЙ СПЕЦНАЗ', q: 'Почему первичный иммунный ответ на новый вирус занимает несколько дней?', ans: ['Кровь течет слишком медленно по сосудам.', 'Организму нужно время на подбор антител.', 'Вирус блокирует работу сердца и легких.', 'Макрофаги долго переваривают пищу.'], correct: 1 },
+            { tag: 'АНАТОМИЯ ЗАЩИТЫ', q: 'Какую функцию выполняют антиген-презентирующие клетки?', ans: ['Они показывают фрагменты врага Т-лимфоцитам.', 'Они прячут вирусы глубоко в костном мозге.', 'Они восстанавливают поврежденную кожу.', 'Они вырабатывают гормоны стресса в кровь.'], correct: 0 },
+            { tag: 'БИОХАКИНГ', q: 'Чем вторичный иммунный ответ (при повторном заражении) отличается от первичного?', ans: ['Он слабее и требует помощи антибиотиков.', 'Он срабатывает мгновенно благодаря клеткам памяти.', 'Он полностью отключает повышение температуры.', 'Он разрушает собственные здоровые ткани.'], correct: 1 },
+            { tag: 'ИТ-МЕТАФОРА', q: 'Если иммунитет — это антивирус, чем являются клетки памяти?', ans: ['Скрытой вредоносной программой.', 'Обновленной базой вирусных сигнатур.', 'Оперативной памятью видеокарты.', 'Системой охлаждения процессора.'], correct: 1 },
+
+            // БЛОК 4: Вакцинация 1.0 (Ослабленные и убитые патогены)
+            { tag: 'ВАКЦИНАЦИЯ 1.0', q: 'В чем заключается фундаментальный принцип любой традиционной вакцинации?', ans: ['Введение антибиотиков для профилактики.', 'Показ иммунитету тренировочной мишени.', 'Замена зараженной крови на свежую донорскую.', 'Хирургическое удаление очагов инфекции.'], correct: 1 },
+            { tag: 'ТЕХНОЛОГИИ', q: 'Что содержится в классической инактивированной (убитой) вакцине?', ans: ['Полностью живой и очень агрессивный вирус.', 'Патоген, убитый нагреванием или химикатами.', 'Готовые синтетические антитела из лаборатории.', 'Смесь сильных витаминов и антибиотиков.'], correct: 1 },
+            { tag: 'ПРИНЦИП РАБОТЫ', q: 'Может ли инактивированная вакцина вызвать реальное инфекционное заболевание?', ans: ['Да, если у человека слабый иммунитет.', 'Нет, мертвый вирус не может размножаться.', 'Да, вирус внутри может легко ожить.', 'Нет, потому что в ней вообще нет вируса.'], correct: 1 },
+            { tag: 'ВАКЦИНАЦИЯ 1.0', q: 'Что такое аттенуированная (живая ослабленная) вакцина?', ans: ['Вакцина из химически синтезированных белков.', 'Вирус, лишенный способности вызывать болезнь.', 'Абсолютно здоровый вирус в малых дозах.', 'Препарат из убитых бактериальных клеток.'], correct: 1 },
+            { tag: 'ИММУННЫЙ ОТВЕТ', q: 'Чего мы добиваемся, вводя в организм ослабленный патоген?', ans: ['Разрушения старых красных кровяных телец.', 'Формирования надежной базы клеток памяти.', 'Очищения крови от накопившихся токсинов.', 'Мгновенного снижения температуры тела.'], correct: 1 },
+            { tag: 'ТЕХНОЛОГИИ', q: 'В чем главный минус традиционных вакцин при появлении новой пандемии?', ans: ['Они слишком быстро растворяются в крови.', 'Выращивание вирусов занимает многие месяцы.', 'Их можно вводить только пожилым людям.', 'Они требуют ежедневного применения.'], correct: 1 },
+            { tag: 'БИОХАКИНГ', q: 'Почему вакцина работает как «патч безопасности» для нашей системы?', ans: ['Она убивает вирусы прямо внутри шприца.', 'Она заранее загружает чертежи оружия от врага.', 'Она покрывает клетки защитным слоем пластика.', 'Она навсегда изменяет наш генетический код.'], correct: 1 },
+            { tag: 'ПРИНЦИП РАБОТЫ', q: 'Что иммунитет делает с убитым вирусом из традиционной вакцины?', ans: ['Игнорирует его как безопасный клеточный мусор.', 'Сканирует его белки и создает точные антитела.', 'Использует его РНК для построения новых клеток.', 'Выводит его из организма через потовые железы.'], correct: 1 },
+            { tag: 'ВАКЦИНАЦИЯ 1.0', q: 'Какая известная болезнь предотвращается с помощью живой ослабленной вакцины?', ans: ['Сезонная аллергия на цветочную пыльцу.', 'Тяжелая вирусная корь (в составе КПК).', 'Острая сердечно-сосудистая недостаточность.', 'Наследственный сахарный диабет.'], correct: 1 },
+            { tag: 'ЛОГИКА ЗАЩИТЫ', q: 'Почему после прививки иногда может слегка подняться температура?', ans: ['Это значит, что человек серьезно заболел вирусом.', 'Это нормальная реакция работающего иммунитета.', 'Это токсичное действие консервантов в шприце.', 'Это признак полного отказа иммунной системы.'], correct: 1 },
+
+            // БЛОК 5: Вакцинация 2.0 (Эра мРНК)
+            { tag: 'ЭРА МРНК', q: 'В чем суть революционной технологии матричной РНК (мРНК) в вакцинах?', ans: ['Мы вводим убитый вирус высокой концентрации.', 'Мы доставляем клетке инструкцию для сборки белка.', 'Мы вводим готовые антитела от переболевших.', 'Мы напрямую меняем спираль нашей ДНК.'], correct: 1 },
+            { tag: 'БИОХАКИНГ', q: 'Какую роль играет мРНК в нашей живой клетке?', ans: ['Она хранит вечную генетическую информацию.', 'Она работает как временный чертеж для принтера.', 'Она разрушает клеточную оболочку изнутри.', 'Она склеивает аминокислоты без помощи рибосом.'], correct: 1 },
+            { tag: 'ТЕХНОЛОГИЯ 2.0', q: 'Что заставляет производить клетку мРНК-вакцина от коронавируса?', ans: ['Цельный, агрессивный и живой коронавирус.', 'Только безопасный шиповидный белок вируса.', 'Токсины, убивающие любые бактерии в крови.', 'Специальные антибиотики широкого спектра.'], correct: 1 },
+            { tag: 'СИСТЕМНЫЙ АНАЛИЗ', q: 'Содержит ли мРНК-вакцина сам вирус или его мертвые фрагменты?', ans: ['Да, она содержит ослабленный живой вирус.', 'Нет, в ней только код (синтетическая инструкция).', 'Да, она содержит фрагменты мертвых вирусов.', 'Нет, она состоит только из витаминных добавок.'], correct: 1 },
+            { tag: 'ИТ-МЕТАФОРА', q: 'Если сравнить клетку с 3D-принтером, чем является мРНК-вакцина?', ans: ['Пластиком для печати любых деталей.', 'USB-флешкой с чертежом нужной детали.', 'Антивирусом, блокирующим работу принтера.', 'Мощным блоком бесперебойного питания.'], correct: 1 },
+            { tag: 'ЭРА МРНК', q: 'Что происходит с молекулой мРНК после того, как клетка синтезировала белок?', ans: ['Она быстро распадается и уничтожается клеткой.', 'Она навсегда встраивается в человеческую ДНК.', 'Она превращается в полноценный живой вирус.', 'Она передается по наследству вашим детям.'], correct: 0 },
+            { tag: 'ИННОВАЦИИ', q: 'В чем главное преимущество мРНК-вакцин перед традиционными?', ans: ['Их можно хранить при комнатной температуре.', 'Код для вакцины можно переписать за пару недель.', 'Они состоят из натуральных травяных экстрактов.', 'Их можно принимать внутрь в виде сладких таблеток.'], correct: 1 },
+            { tag: 'БИОХАКИНГ', q: 'С помощью чего хрупкая молекула мРНК доставляется внутрь нашей клетки?', ans: ['Внутри маленького титанового наноробота.', 'Упакованная в липидную (жировую) наночастицу.', 'Прикрепленная к огромной молекуле глюкозы.', 'Внутри специально обученной бактерии.'], correct: 1 },
+            { tag: 'АНАТОМИЯ ЗАЩИТЫ', q: 'Что делает иммунитет, обнаружив шиповидный белок, созданный нашей клеткой?', ans: ['Считает его своим и полностью игнорирует.', 'Распознает врага и начинает вырабатывать антитела.', 'Начинает бесконтрольно атаковать весь организм.', 'Мгновенно разрушает ядро собственной клетки.'], correct: 1 },
+            { tag: 'ТЕХНОЛОГИЯ 2.0', q: 'Влияет ли вакцина на основе мРНК на геном (ДНК) человека?', ans: ['Да, она полностью переписывает старый геном.', 'Нет, мРНК даже не проникает в ядро клетки к ДНК.', 'Да, она встраивается в случайные участки хромосом.', 'Нет, но она заставляет ДНК мутировать быстрее.'], correct: 1 },
+
+            // БЛОК 6: Коллективный иммунитет и Индекс R0
+            { tag: 'МАТЕМАТИКА ВЫЖИВАНИЯ', q: 'Что означает базовый индекс репродукции (R0) в эпидемиологии?', ans: ['Количество дней, которое человек болеет вирусом.', 'Число людей, которых заразит один больной.', 'Процент людей, умирающих от данного вируса.', 'Скорость мутации вируса в лабораторной среде.'], correct: 1 },
+            { tag: 'СТАТИСТИКА', q: 'Какой вирус обладает одним из самых высоких индексов R0 (от 12 до 18)?', ans: ['Смертоносный вирус лихорадки Эбола.', 'Крайне заразный вирус летучей кори.', 'Сезонный вариант вируса гриппа.', 'Вирус иммунодефицита человека (ВИЧ).'], correct: 1 },
+            { tag: 'КОЛЛЕКТИВНЫЙ ИММУНИТЕТ', q: 'Что такое коллективный (популяционный) иммунитет?', ans: ['Иммунитет, который передается по наследству детям.', 'Ситуация, когда вирус не может найти новую жертву.', 'Вакцина, содержащая защиту от всех известных вирусов.', 'Способность организма убивать любые новые бактерии.'], correct: 1 },
+            { tag: 'СИСТЕМНЫЙ АНАЛИЗ', q: 'Какой процент популяции нужно привить от кори для создания надежного щита?', ans: ['Достаточно привить около тридцати процентов.', 'Около пятидесяти процентов всего населения.', 'Не менее девяноста пяти процентов населения.', 'Абсолютно сто процентов всех людей в мире.'], correct: 2 },
+            { tag: 'СОЦИАЛЬНЫЙ ЩИТ', q: 'Кого в первую очередь защищает высокий коллективный иммунитет?', ans: ['Только тех, кто сделал себе несколько прививок.', 'Молодых людей с идеальным крепким здоровьем.', 'Уязвимых людей, которым противопоказаны вакцины.', 'Вирусы, не давая им мутировать в природе.'], correct: 2 },
+            { tag: 'МАТЕМАТИКА ВЫЖИВАНИЯ', q: 'Что произойдет, если уровень вакцинации от кори упадет до 80%?', ans: ['Вирус полностью исчезнет из человеческой популяции.', 'Коллективный щит рухнет, начнутся локальные вспышки.', 'Вирус мутирует и станет абсолютно безвредным.', 'Иммунитет привитых людей резко ослабнет.'], correct: 1 },
+            { tag: 'РАЗРУШЕНИЕ МИФОВ', q: 'Почему вирусам так выгодно, когда в обществе много невакцинированных людей?', ans: ['Они могут спокойно размножаться и создавать новые мутации.', 'Невакцинированные люди выделяют специальные гормоны.', 'Вакцины убивают вирусы еще в воздухе до контакта.', 'Вирусы боятся запаха современных медицинских вакцин.'], correct: 0 },
+            { tag: 'ЛОГИКА ЗАЩИТЫ', q: 'Как применяется «бритва Оккама» к мифам о вреде массовой вакцинации?', ans: ['Она доказывает наличие глобального мирового заговора.', 'Самое простое объяснение (спасение жизней) — самое верное.', 'Она подтверждает изменение ДНК из-за жидких чипов.', 'Она утверждает, что все вирусы выдуманы учеными.'], correct: 1 },
+            { tag: 'БУДУЩЕЕ НАУКИ', q: 'Какое перспективное направление сейчас разрабатывается на базе мРНК-технологий?', ans: ['Вакцины, дающие бессмертие клеткам мозга.', 'Специальные онковакцины для борьбы с раком.', 'Препараты для изменения цвета глаз человека.', 'Спреи, мгновенно заживляющие любые раны.'], correct: 1 },
+            { tag: 'БИОХАКИНГ', q: 'Как будущая онковакцина сможет помочь больному в борьбе с раковой опухолью?', ans: ['Она заморозит опухоль, остановив движение крови.', 'Обучит иммунитет видеть и атаковать раковые клетки.', 'Заменит раковые клетки на новые стволовые.', 'Создаст вокруг опухоли толстый слой кальция.'], correct: 1 }
+        ];
+
+        /* ==========================================
+           ПЕРЕМЕННЫЕ СОСТОЯНИЯ
+           ========================================== */
+        const TOTAL_QUESTIONS = 15;
+        let sessionQuestions = [];
+        let currentIdx = 0;
+        let score = 0;
+        let securityActive = false;
+        let testFinished = false;
+
+        /* ==========================================
+           АЛГОРИТМ ФИШЕРА-ЙЕТСА (ПЕРЕМЕШИВАНИЕ)
+           ========================================== */
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        /* ==========================================
+           ЛОГИКА ТЕСТА
+           ========================================== */
+        function startTest() {
+            let shuffledBank = shuffle([...allQuestions]);
+            sessionQuestions = shuffledBank.slice(0, TOTAL_QUESTIONS);
+            
+            sessionQuestions = sessionQuestions.map(qObj => {
+                let options = qObj.ans.map((text, idx) => ({ text, isCorrect: idx === qObj.correct }));
+                options = shuffle(options);
+                return {
+                    ...qObj,
+                    options: options
+                };
+            });
+
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('test-interface').classList.remove('hidden');
+            
+            // Задержка активации античита
+            setTimeout(() => { securityActive = true; }, 1500);
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentIdx >= TOTAL_QUESTIONS) {
+                finishTest();
+                return;
+            }
+
+            const q = sessionQuestions[currentIdx];
+            
+            document.getElementById('current-q-num').innerText = currentIdx + 1;
+            document.getElementById('progress-bar').style.width = `${(currentIdx / TOTAL_QUESTIONS) * 100}%`;
+
+            document.getElementById('q-meta').innerText = q.tag;
+            document.getElementById('q-text').innerText = q.q;
+
+            const letters = ['А', 'Б', 'В', 'Г'];
+            const container = document.getElementById('answers-container');
+            container.innerHTML = '';
+            
+            q.options.forEach((opt, idx) => {
+                let btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.innerHTML = `<span class="answer-letter">${letters[idx]}</span><span>${opt.text}</span>`;
+                btn.onclick = () => handleAnswer(opt.isCorrect);
+                container.appendChild(btn);
+            });
+
+            showStep1();
+        }
+
+        function showStep1() {
+            document.getElementById('step-1').style.display = 'block';
+            document.getElementById('step-2').style.display = 'none';
+            document.getElementById('step-2').style.opacity = '0';
+        }
+
+        function showStep2() {
+            document.getElementById('step-1').style.display = 'none';
+            const step2 = document.getElementById('step-2');
+            step2.style.display = 'flex';
+            setTimeout(() => { step2.style.opacity = '1'; }, 50);
+        }
+
+        function handleAnswer(isCorrect) {
+            if (isCorrect) score++;
+            currentIdx++;
+            loadQuestion();
+        }
+
+        /* ==========================================
+           ИТОГИ ТЕСТА
+           ========================================== */
+        function finishTest() {
+            testFinished = true;
+            securityActive = false;
+            document.getElementById('test-interface').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            const percent = Math.round((score / TOTAL_QUESTIONS) * 100);
+            
+            document.getElementById('res-correct').innerText = score;
+            document.getElementById('res-percent').innerText = `${percent}%`;
+
+            let grade, analysis, gradeClass;
+            
+            if (percent < 50) {
+                grade = 2; gradeClass = 'grade-2';
+                analysis = 'Критический уровень угрозы. Иммунная база данных не обновлена. Рекомендуется повторное сканирование материала.';
+            } else if (percent >= 50 && percent < 75) {
+                grade = 3; gradeClass = 'grade-3';
+                analysis = 'Система уязвима. Частичная загрузка данных прошла успешно, но алгоритмы защиты требуют серьезной доработки.';
+            } else if (percent >= 75 && percent < 90) {
+                grade = 4; gradeClass = 'grade-4';
+                analysis = 'Хорошая сопротивляемость. Основные протоколы усвоены, ваш биологический щит работает стабильно.';
+            } else {
+                grade = 5; gradeClass = 'grade-5';
+                analysis = 'Идеальный биохакинг! Максимальная интеграция знаний. Вы понимаете архитектуру иммунитета на уровне создателя.';
+            }
+
+            const circle = document.getElementById('grade-circle');
+            circle.innerText = grade;
+            circle.className = `score-circle ${gradeClass}`;
+            document.getElementById('res-analysis').innerText = analysis;
+        }
+
+        /* ==========================================
+           ANTI-CHEAT ENGINE (BLUR / VISIBILITY)
+           ========================================== */
+        function triggerBlackout() {
+            if (!securityActive || testFinished) return;
+            
+            const overlay = document.getElementById('blackout-overlay');
+            overlay.style.display = 'flex';
+            
+            document.getElementById('q-text').innerText = '';
+            document.getElementById('answers-container').innerHTML = '';
+            
+            currentIdx++;
+            
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                loadQuestion();
+            }, 1800);
+        }
+
+        window.addEventListener('blur', triggerBlackout);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                triggerBlackout();
+            }
+        });
+
+        // Блокировка хоткеев (F12, Ctrl+C/S/P/U/I/J)
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'F12' || 
+               (e.ctrlKey && (e.key === 'c' || e.key === 's' || e.key === 'p' || e.key === 'u' || e.key === 'i' || e.key === 'j')) ||
+               (e.metaKey && (e.key === 'c' || e.key === 's' || e.key === 'p' || e.key === 'u'))) {
+                e.preventDefault();
+            }
+        });
+
+        // Блокировка контекстного меню
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+    </script>
+</body>
+</html>
